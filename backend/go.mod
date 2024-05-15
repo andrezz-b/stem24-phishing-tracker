@@ -13,6 +13,7 @@ require (
 	github.com/prometheus/client_golang v1.11.1
 	github.com/rs/zerolog v1.26.1
 	github.com/vovailchenko/go-zerolog-gelf v0.0.0-20200503160340-8a6a140bfa5c
+	golang.org/x/crypto v0.21.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/mysql v1.1.1
 	gorm.io/driver/postgres v1.1.0
@@ -56,7 +57,6 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

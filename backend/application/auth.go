@@ -68,7 +68,11 @@ func (a *Auth) LoginUser(requestContext *context.RequestContext, request *LoginU
 	log.Debug().Msgf("login new user")
 	user, err := a.authRepo.GetByEmail(requestContext.TenantID(), request.Email)
 	if err != nil {
-		return nil, exceptions.FailedPersisting(models.UserModelName, err)
+		return nil, exceptions.FailedQuerying(models.UserModelName, err)
+	}
+	err = user.ValidateUserPassword(user.Password)
+	if err != nil {
+		return nil, exceptions.FailedQuerying(models.UserModelName, err)
 	}
 	log.Debug().Msgf("user %s fetched", user.Name)
 	return user, nil

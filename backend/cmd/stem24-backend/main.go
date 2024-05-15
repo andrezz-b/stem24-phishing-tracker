@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/andrezz-b/stem24-phishing-tracker/application"
+	model "github.com/andrezz-b/stem24-phishing-tracker/domain/models"
 	"github.com/andrezz-b/stem24-phishing-tracker/domain/services/tenant"
 	"github.com/andrezz-b/stem24-phishing-tracker/infrastructure/metrics"
 	"github.com/andrezz-b/stem24-phishing-tracker/infrastructure/repositories"
@@ -77,6 +78,7 @@ func main() {
 	buildLogs()
 	//authentication()
 	databaseConnection()
+	loadDatabase()
 	migrations()
 	buildDependencies()
 	seeding()
@@ -214,7 +216,16 @@ func seeding() {
 		if appErr != nil {
 			log.Fatal(appErr.ToDto())
 		}
+
+		var roles = []model.Role{{Name: "admin", Description: "Administrator role"}, {Name: "customer", Description: "Authenticated customer role"}, {Name: "anonymous", Description: "Unauthenticated customer role"}}
+		var user = []model.User{{Name: os.Getenv("ADMIN_USERNAME"), Email: os.Getenv("ADMIN_EMAIL"), Password: os.Getenv("ADMIN_PASSWORD"), RoleID: 1}}
+		database.Db.Save(&roles)
+		database.Db.Save(&user)
 	}
+}
+
+func loadDatabase() {
+	database.InitDb()
 }
 
 func buildLogs() {

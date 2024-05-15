@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/andrezz-b/stem24-phishing-tracker/shared/logging"
 	"gorm.io/gorm/logger"
+	"log"
+	"os"
 	"time"
 
 	"gorm.io/driver/mysql"
@@ -121,5 +123,33 @@ func (r *Connection) GetConnectionWithPreload(with []string) *gorm.DB {
 	for _, w := range with {
 		db = db.Preload(w)
 	}
+	return db
+}
+
+var Db *gorm.DB
+
+func InitDb() *gorm.DB {
+	Db = connectDB()
+	return Db
+}
+
+func connectDB() *gorm.DB {
+	var err error
+	host := os.Getenv("DB_HOST")
+	username := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+	port := os.Getenv("DB_PORT")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", username, password, host, port, dbname)
+	//log.Println("dsn : ", dsn)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
+	if err != nil {
+		log.Fatal("Error connecting to database :", err)
+		return nil
+	}
+	log.Println("`Successfully connected to the database")
+
 	return db
 }
