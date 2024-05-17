@@ -15,9 +15,8 @@ type Event struct {
 	MalURL           string `gorm:"type:varchar(1500)"`
 	MalDomainRegDate time.Time
 	DNSRecord        string   `gorm:"type:varchar(500)"`
-	Keywords         []string `gorm:"type:varchar(1500)"`
+	Keywords         []string `gorm:"type:varchar(500)"`
 	Status           Status
-	CommentID        string
-	StatusID         string
-	Comments         []Comment `gorm:""`
+	StatusID         string    `gorm:"foreignKey:StatusID"`
+	Comments         []Comment `gorm:"foreignKey:EventID"`
 }

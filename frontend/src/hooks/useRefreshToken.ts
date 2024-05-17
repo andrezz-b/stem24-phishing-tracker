@@ -7,8 +7,7 @@ const useRefreshToken = () => {
     onSuccess: (data) => {
       setAuth((prev) => ({
         ...prev!,
-        accessToken: data.token,
-        active: data.active,
+        accessToken: data.jwt_token,
       }));
     },
   });

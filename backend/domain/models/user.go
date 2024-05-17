@@ -1,5 +1,12 @@
 package models
 
+import (
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+	"html"
+	"strings"
+)
+
 const (
 	UserModelName = "user"
 )
@@ -22,4 +29,14 @@ func NewUserNoOtp(name string, email string, password string) *User {
 		Email:    email,
 		Password: password,
 	}
+}
+
+func (user *User) BeforeSave(*gorm.DB) error {
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(passwordHash)
+	user.Name = html.EscapeString(strings.TrimSpace(user.Name))
+	return nil
 }

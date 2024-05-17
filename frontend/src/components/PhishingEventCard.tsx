@@ -68,9 +68,22 @@ const PhishingEventCard = ({ event }: PhishingEventCardProps) => {
             ? event.description.slice(0, TEXT_LIMIT) + "..."
             : event.description;
     }, [event.description]);
+
+    const handleBorderColor = () => {
+        switch (event.status) {
+            case "done":
+                return "border-t-green-500"
+            case "in progress":
+                return  "border-t-blue-500"
+            case  "todo":
+                return "border-t-yellow-500"
+            default:
+                return ""
+        }
+    }
     return (
         <Dialog>
-            <Card className="min-w-[250px] max-w-[370px] min-h-[150px] flex flex-col">
+            <Card className={`min-w-[250px] max-w-[370px] min-h-[150px] flex flex-col border-t-8 ${handleBorderColor()}`}>
                 <CardHeader className="items-start">
                     <CardTitle>{event.name}</CardTitle>
                     <CardDescription className="text-left">{truncatedDescription}</CardDescription>

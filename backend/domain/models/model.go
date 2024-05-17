@@ -10,7 +10,6 @@ import (
 type Model struct {
 	ID        string `gorm:"type:char(36);primarykey"`
 	TenantID  string
-	Tenant    *Tenant
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

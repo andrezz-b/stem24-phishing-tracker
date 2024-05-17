@@ -21,8 +21,7 @@ func NewStatus(statusRepo repositories.StatusRepository,
 }
 
 type CreateStatusRequest struct {
-	Name    string // Name of the status
-	EventID string
+	Name string `json:"name" binding:"required"`
 }
 
 func (a *Status) Create(ctx *context.RequestContext, request *CreateStatusRequest) (*models.Status, exceptions.ApplicationException) {
@@ -30,8 +29,10 @@ func (a *Status) Create(ctx *context.RequestContext, request *CreateStatusReques
 		Name: request.Name,
 	}
 
+	println(ctx.TenantID())
 	status, err := a.statusRepo.Persist(ctx.TenantID(), status)
 	if err != nil {
+		println(err.Error())
 		return nil, exceptions.FailedPersisting(models.StatusModelName, err)
 	}
 	return status, nil

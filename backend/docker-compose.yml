@@ -2,7 +2,6 @@ version: '3.5'
 
 services:
   stem24-backend:
-    image: stem24-backend:dev
     container_name: stem24-backend
     build: ./
     #restart: always
@@ -13,7 +12,17 @@ services:
       - ./docker/wait-for.sh:/wait-for.sh
     networks:
       - live
-    entrypoint: bash -c '/wait-for.sh live-database:5432 -t 60 -- go run cmd/stem24-backend/main.go'
+    entrypoint: bash -c '/wait-for.sh postgres_container:5432 -t 60 -- go run cmd/stem24-backend/main.go'
+
+  postgres_db:
+    image: postgres
+    container_name: postgres_container
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+    networks:
+      - live
 
 networks:
   live:

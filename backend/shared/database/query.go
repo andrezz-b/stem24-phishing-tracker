@@ -1,6 +1,7 @@
 package database
 
 import (
+	helpers "github.com/andrezz-b/stem24-phishing-tracker/shared"
 	"github.com/andrezz-b/stem24-phishing-tracker/shared/constants"
 	"strings"
 )
@@ -144,8 +145,9 @@ func (q GetAllStatusesRequest) Build() []WhereQuery {
 		})
 	}
 	if q.Name != nil {
+		println(helpers.ToJsonString(q.Name))
 		qMap = append(qMap, QueryItem{
-			value:    q.Name,
+			value:    &q.Name,
 			key:      "name",
 			operator: "IN",
 		})

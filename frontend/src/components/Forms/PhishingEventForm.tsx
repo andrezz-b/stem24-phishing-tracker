@@ -20,24 +20,46 @@ import {
 } from "@/components/ui/select.tsx";
 import {getDnsRecords} from "@api/whois.ts";
 import {IWhoisRecords} from "@/types/WhoisRecords";
+import { EventsService } from "@/api/events";
 
 const PhishingEventForm = () => {
+    const [dnsRecords, setDnsRecords] = useState<IWhoisRecords | undefined>()
     const form = useForm<z.infer<typeof phishingEventSchema>>({
         resolver: zodResolver(phishingEventSchema),
         defaultValues: {
-            status: "todo"
+            name: "",
+            brand: "",
+            maliciousUrl: "",
+            keyword: "",
+            status: "todo",
+            dnsRecords: []
         }
     })
     const {setValue, getValues, watch} = form
+    const {mutate: addPhishingEvent} = EventsService.useCreateEvent();
 
     const getDomainInfo = async () => {
-        const domainRecords: IWhoisRecords = await getDnsRecords(getValues("maliciousUrl"))
-        const createdDate = domainRecords.WhoisRecord.createdDate
-        setValue("domainRegistrationDate", createdDate)
+        const domainRecords = await getDnsRecords(getValues("maliciousUrl"))
+        const createdDate = domainRecords.WhoisRecord.createdDate ?? domainRecords.WhoisRecord.registryData.createdDate
+        console.log(createdDate, createdDate.toString())
+        setValue("domainRegistrationDate", createdDate.toString())
     }
 
 
-    const onSubmit = () => {
+    const onSubmit = (data: z.infer<typeof phishingEventSchema>) => {
+        addPhishingEvent({
+            Name: data.name,
+            Brand: data.brand,
+            Description: "",
+            MalURL: data.maliciousUrl,
+            MalDomainRegDate: new Date(data.domainRegistrationDate),
+            DnsRecord: data.dnsRecords.join(","),
+            Date: new Date(),
+        }, {
+            onSuccess: () => {
+                form.reset()
+            }
+        })
     }
 
 
@@ -128,7 +150,7 @@ const PhishingEventForm = () => {
                         control={form.control}
                         name="status"
                         render={({field}) => (
-                            <FormItem className="flex-col align-normal">
+                            <FormItem className="flex flex-col justify-normal items-center">
                                 <FormLabel>Event Status</FormLabel>
                                 <FormControl>
                                     <Select

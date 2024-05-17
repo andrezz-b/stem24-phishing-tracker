@@ -11,14 +11,15 @@ import (
 )
 
 type Event struct {
-	eventRepo repositories.EventRepository
-	logger    zerolog.Logger
+	eventRepo  repositories.EventRepository
+	statusRepo repositories.StatusRepository
+	logger     zerolog.Logger
 }
 
-func NewEvent(eventRepo repositories.EventRepository,
+func NewEvent(eventRepo repositories.EventRepository, statusRepo repositories.StatusRepository,
 	logger zerolog.Logger,
 ) *Event {
-	return &Event{eventRepo: eventRepo, logger: logger}
+	return &Event{eventRepo: eventRepo, statusRepo: statusRepo, logger: logger}
 }
 
 type CreateEventRequest struct {
@@ -44,7 +45,13 @@ func (a *Event) Create(ctx *context.RequestContext, request *CreateEventRequest)
 		Keywords:         request.Keywords,
 	}
 
-	event, err := a.eventRepo.Persist(ctx.TenantID(), event)
+	st, err := a.statusRepo.GetByEmail(ctx.TenantID(), "Created")
+	if err != nil {
+		return nil, exceptions.FailedQuerying(models.EventModelName, err)
+	}
+	event.StatusID = st.ID
+	event.Status = *st
+	event, err = a.eventRepo.Persist(ctx.TenantID(), event)
 	if err != nil {
 		return nil, exceptions.FailedPersisting(models.EventModelName, err)
 	}
@@ -61,6 +68,7 @@ type UpdateEventRequest struct {
 	MalDomainRegDate time.Time // Updated registration date of the malicious domain
 	DNSRecord        string    // Updated DNS record associated with the event
 	Keywords         []string  // Updated keywords related to the event
+	StatusID         string    // Updated keywords related to the event
 	// Add other fields as needed
 }
 
@@ -85,6 +93,9 @@ func (request *UpdateEventRequest) ApplyValues(event *models.Event) *models.Even
 	}
 	if request.DNSRecord != "" {
 		event.DNSRecord = request.DNSRecord
+	}
+	if len(request.StatusID) > 0 {
+		event.StatusID = request.StatusID
 	}
 	if len(request.Keywords) > 0 {
 		event.Keywords = request.Keywords

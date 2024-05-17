@@ -2,10 +2,15 @@ package application
 
 import (
 	"fmt"
+	"time"
+
+	"os"
+
 	"github.com/andrezz-b/stem24-phishing-tracker/domain/models"
 	"github.com/andrezz-b/stem24-phishing-tracker/infrastructure/repositories"
 	"github.com/andrezz-b/stem24-phishing-tracker/shared/context"
 	"github.com/andrezz-b/stem24-phishing-tracker/shared/exceptions"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/pquerna/otp/totp"
 	"github.com/rs/zerolog"
 )
@@ -48,6 +53,34 @@ type UpdateAuthRequest struct {
 	UserID    string `json:"user_id"`
 	Extension string `json:"extension"`
 	Number    string `json:"number"`
+}
+
+func (a *Auth) GenerateTokens(userID string) (string, string, error) {
+	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
+	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	// Generate JWT token
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  userID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	jwtTokenString, err := jwtToken.SignedString([]byte(accessSecret))
+	if err != nil {
+		return "", "", err
+	}
+
+	// Generate refresh token with expiration
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  userID,
+		"exp": time.Now().Add(time.Hour * 72).Unix(), // Refresh token expires after 72 hours
+	})
+
+	refreshTokenString, err := refreshToken.SignedString([]byte(refreshSecret))
+	if err != nil {
+		return "", "", err
+	}
+
+	return jwtTokenString, refreshTokenString, nil
 }
 
 func (a *Auth) CreateUser(requestContext *context.RequestContext, request *RegisterUserInput) (*models.User, exceptions.ApplicationException) {
