@@ -29,15 +29,14 @@ type Event struct {
 	ID               string    `json:"id"`
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
-	DeletedAt        time.Time `json:"deletedAt"`
-	Name             string    `json:"names"`
-	Date             time.Time
-	Brand            string `json:"brand"`
-	Description      string `json:"description"`
-	MalURL           string `json:"malUrl"`
-	MalDomainRegDate time.Time
-	DNSRecord        string   `json:"dnsRecord"`
-	Keywords         []string `json:"keywords"`
-	Status           *Status  `json:"status"`
+	Name             string    `json:"name"`
+	Date             time.Time `json:"date"`
+	Brand            string    `json:"brand"`
+	Description      string    `json:"description"`
+	MalURL           string    `json:"malUrl"`
+	MalDomainRegDate time.Time `json:"malDomainRegDate"`
+	DNSRecord        string    `json:"dnsRecord"`
+	Keywords         []string  `json:"keywords"`
+	Status           *Status   `json:"status"`
 	Comments         []*Comment
 }

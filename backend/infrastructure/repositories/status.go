@@ -3,6 +3,7 @@ package repositories
 import (
 	"fmt"
 	"github.com/andrezz-b/stem24-phishing-tracker/domain/models"
+	helpers "github.com/andrezz-b/stem24-phishing-tracker/shared"
 	"github.com/andrezz-b/stem24-phishing-tracker/shared/database"
 )
 
@@ -19,7 +20,7 @@ type StatusRepository interface {
 	Delete(tenantID string, status *models.Status) error
 	GetByEmail(tenantID, email string) (*models.Status, error)
 	Get(tenantID string, ID string) (*models.Status, error)
-	GetAll(tenantID string, query database.Query, with ...string) ([]*models.Status, error)
+	GetAll(tenantID string, query database.Query) ([]*models.Status, error)
 }
 
 // Status ....
@@ -30,7 +31,9 @@ type Status struct {
 // Persist ....
 func (r *Status) Persist(tenantID string, status *models.Status) (*models.Status, error) {
 	status.TenantID = tenantID
-	if err := r.conn.GetConnectionWithPreload([]string{"SkillGroups"}).Create(status).Error; err != nil {
+	println(status.TenantID)
+	println(tenantID)
+	if err := r.conn.GetConnectionWithPreload([]string{}).Create(status).Error; err != nil {
 		return nil, err
 	}
 	return status, nil
@@ -56,7 +59,10 @@ func (r *Status) Delete(tenantID string, status *models.Status) error {
 
 func (r *Status) GetByEmail(tenantID, email string) (*models.Status, error) {
 	var status models.Status
-	if err := r.conn.GetConnectionWithPreload(nil).Where("tenant_id = ?", tenantID).First(&status, "email = ?", email).Error; err != nil {
+	println("AAAAAAAA")
+	println(tenantID)
+	println(email)
+	if err := r.conn.GetConnectionWithPreload([]string{}).Where("tenant_id = ?", tenantID).First(&status, "name = ?", email).Error; err != nil {
 		return nil, err
 	}
 	return &status, nil
@@ -65,21 +71,17 @@ func (r *Status) GetByEmail(tenantID, email string) (*models.Status, error) {
 // Get ....
 func (r *Status) Get(tenantID string, ID string) (*models.Status, error) {
 	var status models.Status
-	if err := r.conn.GetConnectionWithPreload([]string{"SkillGroups"}).Where("tenant_id = ?", tenantID).First(&status, "id = ?", ID).Error; err != nil {
+	if err := r.conn.GetConnectionWithPreload([]string{}).Where("tenant_id = ?", tenantID).First(&status, "id = ?", ID).Error; err != nil {
 		return nil, err
 	}
 	return &status, nil
 }
 
 // GetAll ...
-func (r *Status) GetAll(tenantID string, query database.Query, with ...string) ([]*models.Status, error) {
+func (r *Status) GetAll(tenantID string, query database.Query) ([]*models.Status, error) {
 	var records []*models.Status
-	preload := []string{"SkillGroups"}
-	if len(with) > 0 {
-		preload = append(preload, with...)
-	}
 
-	tx := r.conn.GetConnectionWithPreload(preload)
+	tx := r.conn.GetConnectionWithPreload([]string{})
 
 	if query != nil {
 		if query.Limit() != 0 {
@@ -93,6 +95,7 @@ func (r *Status) GetAll(tenantID string, query database.Query, with ...string) (
 		tx.Order(query.OrderBy())
 
 		for _, item := range query.Build() {
+			println(fmt.Sprintf("%s %s ?", item.Key(), item.Operator()), helpers.ToJsonString(item.Value()))
 			tx.Where(fmt.Sprintf("%s %s ?", item.Key(), item.Operator()), item.Value())
 		}
 	}
@@ -104,5 +107,6 @@ func (r *Status) GetAll(tenantID string, query database.Query, with ...string) (
 	if err := tx.Find(&records).Error; err != nil {
 		return nil, err
 	}
+
 	return records, nil
 }

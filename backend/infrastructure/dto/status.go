@@ -11,7 +11,6 @@ func NewStatus(status *models.Status) *Status {
 		ID:        status.ID,
 		CreatedAt: status.CreatedAt,
 		UpdatedAt: status.UpdatedAt,
-		DeletedAt: status.DeletedAt.Time,
 		Name:      status.Name,
 	}
 }
@@ -21,6 +20,5 @@ type Status struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt time.Time `json:"deleted_at"`
 	Name      string    `json:"names"`
 }

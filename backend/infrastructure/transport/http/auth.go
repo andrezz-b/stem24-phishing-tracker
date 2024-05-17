@@ -1,14 +1,18 @@
 package http
 
 import (
-	"github.com/andrezz-b/stem24-phishing-tracker/application"
-	helpers "github.com/andrezz-b/stem24-phishing-tracker/shared"
-	"github.com/andrezz-b/stem24-phishing-tracker/shared/exceptions"
-	"github.com/go-playground/validator/v10"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"os"
+
+	"github.com/andrezz-b/stem24-phishing-tracker/application"
+	helpers "github.com/andrezz-b/stem24-phishing-tracker/shared"
+	"github.com/andrezz-b/stem24-phishing-tracker/shared/exceptions"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // NewAuth constructor for aUTH
@@ -23,6 +27,46 @@ func NewAuth(authApp *application.Auth, controller Controller) *Auth {
 type Auth struct {
 	Controller
 	authApp *application.Auth
+}
+
+func (ac *Auth) RefreshToken(ctx *gin.Context) {
+	var request struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		exception := exceptions.UnprocessableEntity(ac.ValidationErrors(err.(validator.ValidationErrors)), "")
+		ctx.JSON(exception.Status(), exception.ToDto())
+		return
+	}
+
+	// Verify the refresh token
+	refreshSecret := os.Getenv("JWT_REFRESH_SECRET")
+	token, err := jwt.Parse(request.RefreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(refreshSecret), nil
+	})
+
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "Invalid refresh token"})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "Invalid refresh token"})
+		return
+	}
+
+	// Generate a new JWT token
+	jwtToken, _, err := ac.authApp.GenerateTokens(claims["id"].(string))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Failed to generate token"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "jwt_token": jwtToken})
 }
 
 func (ac *Auth) SignUpUser(ctx *gin.Context) {
@@ -73,11 +117,20 @@ func (ac *Auth) LoginUser(ctx *gin.Context) {
 		return
 	}
 
+	// Generate JWT and refresh tokens
+	jwtToken, refreshToken, err := ac.authApp.GenerateTokens(user.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Failed to generate tokens"})
+		return
+	}
+
 	userResponse := gin.H{
-		"id":          user.ID,
-		"name":        user.Name,
-		"email":       user.Email,
-		"otp_enabled": user.Otp_enabled,
+		"id":            user.ID,
+		"name":          user.Name,
+		"email":         user.Email,
+		"otp_enabled":   user.Otp_enabled,
+		"jwt_token":     jwtToken,
+		"refresh_token": refreshToken,
 	}
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "user": userResponse})
 }
