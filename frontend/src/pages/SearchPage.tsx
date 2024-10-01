@@ -1,8 +1,8 @@
-import { EventsService } from "@/api/events";
+import {EventsService} from "@/api/events";
 import PhishingEventCard from "@/components/PhishingEventCard";
-import { Button } from "@/components/ui/button";
-import { FormField, FormItem, FormControl, Form } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+import {FormField, FormItem, FormControl, Form} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
 import {
     Pagination,
     PaginationContent,
@@ -10,18 +10,18 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination";
-import { IPhishingEvent, PhishingEventSearchData } from "@/interfaces/PhishingEventIntefaces";
+import {IPhishingEvent, PhishingEventSearchData} from "@/interfaces/PhishingEventIntefaces";
 import Navbar from "@/layouts/Navbar";
-import { zodResolver } from "@hookform/resolvers/zod";
+import {zodResolver} from "@hookform/resolvers/zod";
 import {
     Accordion,
     AccordionItem,
     AccordionTrigger,
     AccordionContent,
 } from "@radix-ui/react-accordion";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import {useState} from "react";
+import {useForm} from "react-hook-form";
+import {z} from "zod";
 
 const events: Array<IPhishingEvent> = [
     {
@@ -33,7 +33,7 @@ const events: Array<IPhishingEvent> = [
         maliciousUrl: "test",
         domainRegistrationDate: new Date(),
         keyword: [],
-        status: "todo",
+        status: "in progress",
         comments: [],
         dnsRecords: [],
     },
@@ -44,6 +44,20 @@ const events: Array<IPhishingEvent> = [
         brand: "Brand 2",
         description:
             "Event 2 description Lorem ipsum dolor, sit amet consectetur adipisicing elit. Minus, ea odio atque voluptatibus laudantium itaque dolorum modi quidem nesciunt officia.",
+        maliciousUrl: "",
+        domainRegistrationDate: new Date(),
+        keyword: ["keyword1", "short", "very long and cool", "keyword4"],
+        status: "done",
+        comments: [],
+        dnsRecords: [],
+    },
+    {
+        id: 3,
+        name: "Event 3",
+        createdAt: new Date(),
+        brand: "Brand 3",
+        description:
+            "Event 3 description Lorem ipsum dolor, sit amet consectetur adipisicing elit. Minus, ea odio atque voluptatibus laudantium itaque dolorum modi quidem nesciunt officia.",
         maliciousUrl: "",
         domainRegistrationDate: new Date(),
         keyword: ["keyword1", "short", "very long and cool", "keyword4"],
@@ -94,7 +108,6 @@ const SearchPage = () => {
 
     return (
         <>
-            <Navbar />
             <div className="flex justify-center py-10 px-4">
                 <div className="flex flex-col gap-6">
                     <h2>Search page</h2>
@@ -106,7 +119,7 @@ const SearchPage = () => {
                                         <FormField
                                             control={form.control}
                                             name="name"
-                                            render={({ field }) => (
+                                            render={({field}) => (
                                                 <FormItem className="w-full">
                                                     <FormControl>
                                                         <Input
@@ -131,7 +144,7 @@ const SearchPage = () => {
                                         <FormField
                                             control={form.control}
                                             name="brand"
-                                            render={({ field }) => (
+                                            render={({field}) => (
                                                 <FormItem>
                                                     <FormControl>
                                                         <Input placeholder="Brand" {...field} />
@@ -142,7 +155,7 @@ const SearchPage = () => {
                                         <FormField
                                             control={form.control}
                                             name="domainName"
-                                            render={({ field }) => (
+                                            render={({field}) => (
                                                 <FormItem>
                                                     <FormControl>
                                                         <Input
@@ -156,7 +169,7 @@ const SearchPage = () => {
                                         <FormField
                                             control={form.control}
                                             name="keywords"
-                                            render={({ field }) => (
+                                            render={({field}) => (
                                                 <FormItem>
                                                     <FormControl>
                                                         <Input placeholder="Keywords" {...field} />
@@ -167,7 +180,7 @@ const SearchPage = () => {
                                         <FormField
                                             control={form.control}
                                             name="endDate"
-                                            render={({ field }) => (
+                                            render={({field}) => (
                                                 <FormItem>
                                                     <FormControl>
                                                         <Input
@@ -182,7 +195,7 @@ const SearchPage = () => {
                                         <FormField
                                             control={form.control}
                                             name="startDate"
-                                            render={({ field }) => (
+                                            render={({field}) => (
                                                 <FormItem>
                                                     <FormControl>
                                                         <Input
@@ -202,25 +215,25 @@ const SearchPage = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {events.map((event) => (
-                            <PhishingEventCard key={event.id} event={event} />
+                            <PhishingEventCard key={event.id} event={event}/>
                         ))}
                         {events.map((event) => (
-                            <PhishingEventCard key={event.id} event={event} />
+                            <PhishingEventCard key={event.id} event={event}/>
                         ))}
                         {events.map((event) => (
-                            <PhishingEventCard key={event.id} event={event} />
+                            <PhishingEventCard key={event.id} event={event}/>
                         ))}
                     </div>
                     <Pagination>
                         <PaginationContent>
                             {query.hasPreviousPage && (
                                 <PaginationItem>
-                                    <PaginationPrevious href="#" />
+                                    <PaginationPrevious href="#"/>
                                 </PaginationItem>
                             )}
                             {query.hasNextPage && (
                                 <PaginationItem>
-                                    <PaginationNext href="#" />
+                                    <PaginationNext href="#"/>
                                 </PaginationItem>
                             )}
                         </PaginationContent>

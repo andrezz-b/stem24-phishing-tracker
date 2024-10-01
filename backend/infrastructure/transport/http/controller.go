@@ -8,7 +8,6 @@ import (
 	"github.com/andrezz-b/stem24-phishing-tracker/shared/exceptions"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type Controller struct {
@@ -47,7 +46,7 @@ func (c *Controller) BuildRequestContext(ctx *gin.Context) (*context.RequestCont
 		}
 		return nil, exceptions.BadRequest(data, "")
 	}
-	token, ok := ctx.Get("user")
+	/* token, ok := ctx.Get("user")
 	if !ok {
 		data := map[string][]string{
 			"user": {
@@ -55,8 +54,8 @@ func (c *Controller) BuildRequestContext(ctx *gin.Context) (*context.RequestCont
 			},
 		}
 		return nil, exceptions.BadRequest(data, "")
-	}
-	return context.NewRequestContext(xCorrelation.(string), tenant.ID, context.NewUser(token.(*jwt.Token), tenant.ID), ctx.Copy()), nil
+	} */
+	return context.NewRequestContext(xCorrelation.(string), tenant.ID, nil, ctx.Copy()), nil
 }
 
 func (c *Controller) ValidationErrors(validationErrors validator.ValidationErrors) map[string][]string {

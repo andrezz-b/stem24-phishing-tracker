@@ -1,5 +1,5 @@
 import type { User } from "@/types/User";
-import type { LoginData, RefreshTokenResponse, RegisterData, TokenResponse } from "@/types/Auth";
+import type { LoginData, LoginResponse, RefreshResponse, RegisterData } from "@/types/Auth";
 import { axiosPublic } from "./config/axios";
 import { UseMutationOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
@@ -9,38 +9,38 @@ import useAuth from "@/hooks/useAuth";
 const AuthService = {
     useLogin: (
         mutationOptions?: Omit<
-            UseMutationOptions<RefreshTokenResponse, Error, LoginData>,
+            UseMutationOptions<LoginResponse, Error, LoginData>,
             "mutationFn" | "onSuccess"
         >,
     ) => {
         const [, setRefreshToken] = useLocalStorage<string>("refreshToken", "");
         const { setAuth } = useAuth();
         const queryClient = useQueryClient();
-        return useMutation<RefreshTokenResponse, Error, LoginData>({
+        return useMutation<LoginResponse, Error, LoginData>({
             mutationFn: async ({ email, password }) => {
-                const response = await axiosPublic.post<RefreshTokenResponse>(
+                const response = await axiosPublic.post<LoginResponse>(
                     "/login",
                     { email, password },
                     { withCredentials: true },
                 );
                 return response.data;
             },
-            onSuccess: ({ token, active, refreshToken }, { email }) => {
+            onSuccess: ({ user}, { email }) => {
+                const { jwt_token, refresh_token } = user;
                 queryClient.clear();
                 setAuth({
                     user: {
                         email,
                     },
-                    accessToken: token,
-                    active,
+                    accessToken: jwt_token,
                 });
-                setRefreshToken(refreshToken);
+                setRefreshToken(refresh_token);
             },
             ...mutationOptions,
         });
     },
 
-    useRefreshToken: <T = TokenResponse>(
+    useRefreshToken: <T = RefreshResponse>(
         mutationOptions?: Omit<UseMutationOptions<T>, "mutationFn">,
     ) => {
         // When in StrictMode useLocalStorage sometimes returns the default value so this is a workaround
@@ -50,8 +50,8 @@ const AuthService = {
             mutationFn: async () => {
                 try {
                     const response = await axiosPublic.post<T>(
-                        "/auth/refresh",
-                        { refreshToken },
+                        "/refresh",
+                        { refresh_token: refreshToken },
                         { withCredentials: true },
                     );
                     return response.data;

@@ -4,6 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"math"
+	"net/http"
+	"os"
+	"os/signal"
+	"reflect"
+	"strings"
+	"syscall"
+	"time"
+
 	"github.com/andrezz-b/stem24-phishing-tracker/application"
 	"github.com/andrezz-b/stem24-phishing-tracker/domain/services/tenant"
 	"github.com/andrezz-b/stem24-phishing-tracker/infrastructure/metrics"
@@ -24,16 +35,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
-	"io"
-	"log"
-	"math"
-	"net/http"
-	"os"
-	"os/signal"
-	"reflect"
-	"strings"
-	"syscall"
-	"time"
 )
 
 var (
@@ -51,6 +52,8 @@ var (
 	commentController *httpControllers.Comments
 	eventController   *httpControllers.Event
 	statusController  *httpControllers.Status
+
+	statusApp *application.Status
 )
 
 // @title STEM-24 Git Good Backend service
@@ -77,6 +80,7 @@ func main() {
 	buildLogs()
 	//authentication()
 	databaseConnection()
+	// loadDatabase()
 	migrations()
 	buildDependencies()
 	seeding()
@@ -207,12 +211,23 @@ func seeding() {
 			amLogger,
 		)
 
-		_, appErr := tenantApp.Create(appContext.NewRequestContext("SEED PROCESS", "SEED PROCESS", nil, nil),
+		tenant, appErr := tenantApp.Create(appContext.NewRequestContext("SEED PROCESS", "SEED PROCESS", nil, nil),
 			&application.CreateTenantRequest{
 				Name: constants.DefaultTenant,
 			})
 		if appErr != nil {
 			log.Fatal(appErr.ToDto())
+		}
+
+		//var roles = []model.Role{{Name: "admin", Description: "Administrator role"}, {Name: "customer", Description: "Authenticated customer role"}, {Name: "anonymous", Description: "Unauthenticated customer role"}}
+		//var user = []model.User{{Name: os.Getenv("ADMIN_USERNAME"), Email: os.Getenv("ADMIN_EMAIL"), Password: os.Getenv("ADMIN_PASSWORD"), RoleID: 1}}
+		//database.Db.Save(&roles)
+		//database.Db.Save(&user)
+
+		if st, err := statusApp.GetAll(appContext.NewRequestContext("SEED PROCESS", tenant.ID, nil, nil), database.GetAllStatusesRequest{Name: []string{"Created"}}); err != nil || len(st) == 0 {
+			statusApp.Create(appContext.NewRequestContext("SEED PROCESS", tenant.ID, nil, nil), &application.CreateStatusRequest{Name: "Created"})
+			statusApp.Create(appContext.NewRequestContext("SEED PROCESS", tenant.ID, nil, nil), &application.CreateStatusRequest{Name: "In-Progress"})
+			statusApp.Create(appContext.NewRequestContext("SEED PROCESS", tenant.ID, nil, nil), &application.CreateStatusRequest{Name: "Done"})
 		}
 	}
 }
@@ -250,7 +265,7 @@ func buildDependencies() {
 		baseController,
 	)
 
-	statusApp := application.NewStatus(
+	statusApp = application.NewStatus(
 		repositories.NewStatus(conn),
 		amLogger,
 	)
@@ -261,6 +276,7 @@ func buildDependencies() {
 
 	eventApp := application.NewEvent(
 		repositories.NewEvent(conn),
+		repositories.NewStatus(conn),
 		amLogger,
 	)
 	eventController = httpControllers.NewEvent(
@@ -275,12 +291,14 @@ func httpRouter() *gin.Engine {
 	}
 	gin.DefaultWriter = io.MultiWriter(os.Stdout)
 	router = gin.New()
+	origins := []string{"http://localhost:5173"}
 	config := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
-		AllowAllOrigins:  true,
+		AllowAllOrigins:  false,
+		AllowOrigins:     origins,
 	}
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -293,7 +311,7 @@ func httpRouter() *gin.Engine {
 	}
 	router.Use(cors.New(config))
 	router.Use(gin.RecoveryWithWriter(io.MultiWriter(writers.Writers()...)))
-	//router.Use(middleware.XCorrelate())
+	router.Use(middleware.XCorrelate())
 
 	router.GET("/api/health/live", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"live": "true"})
@@ -306,7 +324,7 @@ func httpRouter() *gin.Engine {
 
 	router.GET("/metrics", gin.WrapH(promhttp.HandlerFor(prometheusRegistry, promhttp.HandlerOpts{Registry: prometheusRegistry})))
 
-	router.Use(middleware.Authenticate())
+	//router.Use(middleware.Authenticate())
 	router.Use(middleware.Tenant())
 	if runtimebag.GetEnvBool(constants.RequestLog, false) {
 		router.Use(middleware.Log(amLogger))
@@ -328,6 +346,8 @@ func httpRouter() *gin.Engine {
 	router.POST("/api/register", authController.SignUpUser)
 	router.POST("/api/login", authController.LoginUser)
 	router.POST("/api/otp/generate", authController.GenerateOTP)
+	// Add this line to your existing routes
+	router.POST("/api/refresh", authController.RefreshToken)
 	router.POST("/api/otp/verify", authController.VerifyOTP)
 	router.POST("/api/otp/validate", authController.ValidateOTP)
 	router.POST("/api/otp/disable", authController.DisableOTP)
